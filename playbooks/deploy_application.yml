@@ -1,0 +1,24 @@
+---
+- name: Deploy Application
+  hosts: webservers
+  roles:
+    - webserver
+  tasks:
+    - name: Deploy application code
+      # Tasks to deploy application code would go here
+
+- name: Update Database
+  hosts: databases
+  roles:
+    - database
+  tasks:
+    - name: Run database migrations
+      # Tasks to run database migrations would go here
+
+- name: Update Load Balancers
+  hosts: loadbalancers
+  roles:
+    - loadbalancer
+  tasks:
+    - name: Update load balancer configuration
+      # Tasks to update load balancer config would go here

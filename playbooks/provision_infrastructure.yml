@@ -1,0 +1,12 @@
+---
+- name: Provision Infrastructure
+  hosts: localhost
+  tasks:
+    - name: Provision VMs
+      # Tasks to provision VMs would go here
+
+- name: Configure New Servers
+  hosts: new_servers
+  roles:
+    - common
+    - security
