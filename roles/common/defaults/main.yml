@@ -1,2 +1,19 @@
 ---
-# defaults file for roles/common
+# defaults file for common
+ansible_distribution: "RedHat"
+satellite_url: "192.168.2.156"
+ip_netmask: "255.255.255.0"
+ip_gateway: "192.168.2.1"
+dns1: "192.168.2.1"
+dns2: "192.168.2.1"
+vcenter_username: "Administrator@vsphere.local"
+vcenter_password: ""
+vcenter_hostname: "192.168.2.101"
+template_name: "Client"
+cluster_name: "ITMCO"
+datacenter_name: "Datacenter"
+domain_name: "itmco.local"
+vm_network: "DSwitch-VM Network"
+vm_folder: "/vm/AAP_HOSTS"
+ansible_python_interpreter: "/usr/bin/python3"
+ansible_connection: "local"
