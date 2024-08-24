@@ -1,0 +1,6 @@
+---
+- name: Configure loadbalancers
+  hosts: loadbalancers
+  roles:
+    - common
+    - loadbalancers
