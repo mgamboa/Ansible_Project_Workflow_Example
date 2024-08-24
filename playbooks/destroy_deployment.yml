@@ -1,0 +1,41 @@
+---
+- name: Destroy Deployment
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Get list of VMs in the folder
+      community.vmware.vmware_vm_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        folder: "{{ vm_folder }}"
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Destroy VMs
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        name: "{{ item.vm }}"
+        state: absent
+        force: yes
+      delegate_to: localhost
+      loop: "{{ vm_info.virtual_machines }}"
+      when: item.vm.startswith('webserver-vm-') or 
+            item.vm.startswith('database-vm-') or 
+            item.vm.startswith('loadbalancer-vm-') or 
+            item.vm.startswith('monitoring-vm-')
+
+    - name: Remove VMs from inventory
+      meta: refresh_inventory
+
+    - name: Display destruction summary
+      debug:
+        msg: 
+          - "Deployment destruction complete."
+          - "Destroyed VMs:"
+          - "{{ vm_info.virtual_machines | map(attribute='vm') | select('match', '(webserver|database|loadbalancer|monitoring)-vm-') | list }}"
