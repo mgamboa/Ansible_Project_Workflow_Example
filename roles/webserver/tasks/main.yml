@@ -1,2 +1,56 @@
 ---
-# tasks file for roles/webserver
+- name: Configure and Deploy Webservers
+  hosts: webserver
+  become: yes
+  vars:
+    apache_port: 80
+
+  roles:
+    - common
+
+  tasks:
+    - name: Install Apache web server
+      yum:
+        name: httpd
+        state: present
+
+    - name: Ensure Apache is started and enabled
+      systemd:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Open firewall port for Apache
+      firewalld:
+        port: "{{ apache_port }}/tcp"
+        permanent: yes
+        state: enabled
+      notify: Reload firewall
+
+    - name: Create a basic index.html
+      copy:
+        content: |
+          <html>
+          <body>
+            <h1>Welcome to {{ inventory_hostname }}</h1>
+            <p>This is a basic web page served by Apache.</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+
+    - name: Set correct permissions for web content
+      file:
+        path: /var/www/html
+        owner: apache
+        group: apache
+        mode: '0755'
+        recurse: yes
+
+  handlers:
+    - name: Reload firewall
+      command: firewall-cmd --reload
+
+    - name: Restart Apache
+      systemd:
+        name: httpd
+        state: restarted
