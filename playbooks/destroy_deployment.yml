@@ -30,8 +30,29 @@
             item.vm.startswith('loadbalancer-vm-') or 
             item.vm.startswith('monitoring-vm-')
 
-    - name: Remove VMs from inventory
-      meta: refresh_inventory
+    - name: Remove VMs from AWX inventory
+      uri:
+        url: "{{ awx_url }}/api/v2/inventories/{{ awx_inventory_id }}/hosts/"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ awx_token }}"
+        status_code: 200
+      register: awx_hosts
+      delegate_to: localhost
+
+    - name: Delete hosts from AWX inventory
+      uri:
+        url: "{{ awx_url }}/api/v2/hosts/{{ item.id }}/"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ awx_token }}"
+        status_code: 204
+      loop: "{{ awx_hosts.json.results }}"
+      when: item.name.startswith('webserver-vm-') or 
+            item.name.startswith('database-vm-') or 
+            item.name.startswith('loadbalancer-vm-') or 
+            item.name.startswith('monitoring-vm-')
+      delegate_to: localhost
 
     - name: Display destruction summary
       debug:

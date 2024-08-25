@@ -71,9 +71,18 @@ Adjust the playbooks and roles as needed for your specific infrastructure and ap
 
 The `setup_vm_infrastructure.yml` playbook provides automated VM creation with static IP assignment. It's set to create 4 VMs by default: 1 webserver, 1 database server, 1 load balancer, and 1 monitoring server. The IP range for these VMs is set from 192.168.2.50 to 192.168.2.60.
 
+### AWX Integration
+
+This project is designed to work seamlessly with AWX. The `setup_vm_infrastructure.yml` playbook creates a dynamic inventory and updates it directly in AWX. Here's how to set it up:
+
+1. In AWX, create a new inventory for this project.
+2. Note the inventory ID (visible in the URL when you view the inventory).
+3. Create a token in AWX for API access.
+4. Update the `setup_vm_infrastructure.yml` playbook with your AWX URL, token, and inventory ID in the common role's defaults file.
+
 ### Deployment Destruction
 
-The `destroy_deployment.yml` playbook allows you to tear down the entire infrastructure. Use this playbook with caution, as it will permanently delete the specified VMs.
+The `destroy_deployment.yml` playbook allows you to tear down the entire infrastructure and remove the VMs from the AWX inventory. Use this playbook with caution, as it will permanently delete the specified VMs.
 
 ## Configuration
 
@@ -92,5 +101,8 @@ Default variables are set in the common role's defaults file. You can override t
 - ip_gateway: "192.168.2.1"
 - dns1: "192.168.2.1"
 - dns2: "192.168.2.1"
+- awx_url: "https://your-awx-url"
+- awx_token: "your-awx-token"
+- awx_inventory_id: 1
 
 Review and adjust these settings to match your specific environment requirements.

@@ -6,7 +6,6 @@
     vm_count: 4  # Recommended minimal setup: 1 webserver, 1 database, 1 load balancer, 1 monitoring
     ip_range_start: 50
     ip_range_end: 60
-    used_ips: []
     vm_roles:
       - webserver
       - database
@@ -76,19 +75,53 @@
       register: vm_info
       loop: "{{ vms }}"
 
-    - name: Update inventory with new VMs
-      add_host:
-        name: "{{ item.instance.hw_name }}"
-        groups: 
-          - new_vms
-          - "{{ item.item.role }}"
-        ansible_host: "{{ item.instance.ipv4 }}"
+    - name: Create dynamic inventory dictionary
+      set_fact:
+        dynamic_inventory:
+          all:
+            children:
+              webserver: {"hosts": {}}
+              database: {"hosts": {}}
+              loadbalancer: {"hosts": {}}
+              monitoring: {"hosts": {}}
+      
+    - name: Populate dynamic inventory
+      set_fact:
+        dynamic_inventory: >
+          {{ dynamic_inventory | combine({
+            item.item.role: {
+              "hosts": {
+                item.instance.hw_name: {
+                  "ansible_host": item.instance.ipv4
+                }
+              }
+            }
+          }, recursive=True) }}
       loop: "{{ vm_info.results }}"
       when: 
         - item.instance.ipv4 is defined and item.instance.ipv4 != None and item.instance.ipv4 != ""
 
+    - name: Create JSON inventory file
+      copy:
+        content: "{{ dynamic_inventory | to_json }}"
+        dest: "/tmp/dynamic_inventory.json"
+
+    - name: Update AWX inventory
+      uri:
+        url: "{{ awx_url }}/api/v2/inventories/{{ awx_inventory_id }}/update_inventory_sources/"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ awx_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body: 
+          source: "file"
+          source_path: "/tmp/dynamic_inventory.json"
+        status_code: 202
+      delegate_to: localhost
+
 - name: Configure new VMs
-  hosts: new_vms
+  hosts: all
   gather_facts: yes
   become: yes
 
@@ -135,4 +168,4 @@
         msg: 
           - "Infrastructure setup complete."
           - "Created VMs:"
-          - "{{ groups['new_vms'] | map('regex_replace', '^(.*)$', '  - \1: ' + hostvars[item]['ansible_host'] + ' (Role: ' + hostvars[item]['group_names'][1] + ')') | list }}"
+          - "{{ dynamic_inventory | to_nice_yaml }}"
