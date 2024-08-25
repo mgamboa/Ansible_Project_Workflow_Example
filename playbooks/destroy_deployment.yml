@@ -1,7 +1,7 @@
 ---
 - name: Destroy Deployment
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
 
   tasks:
     - name: Get list of VMs in the folder
@@ -9,7 +9,7 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         folder: "{{ vm_folder }}"
       delegate_to: localhost
       register: vm_info
@@ -19,19 +19,16 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         name: "{{ item.vm }}"
         state: absent
-        force: yes
+        force: true
       delegate_to: localhost
       loop: "{{ vm_info.virtual_machines }}"
-      when: item.vm.startswith('webserver-vm-') or 
-            item.vm.startswith('database-vm-') or 
-            item.vm.startswith('loadbalancer-vm-') or 
-            item.vm.startswith('monitoring-vm-')
+      when: item.vm is match("(webserver|database|loadbalancer|monitoring)-vm-")
 
     - name: Remove VMs from AWX inventory
-      uri:
+      ansible.builtin.uri:
         url: "{{ awx_url }}/api/v2/inventories/{{ awx_inventory_id }}/hosts/"
         method: GET
         headers:
@@ -41,21 +38,18 @@
       delegate_to: localhost
 
     - name: Delete hosts from AWX inventory
-      uri:
+      ansible.builtin.uri:
         url: "{{ awx_url }}/api/v2/hosts/{{ item.id }}/"
         method: DELETE
         headers:
           Authorization: "Bearer {{ awx_token }}"
         status_code: 204
       loop: "{{ awx_hosts.json.results }}"
-      when: item.name.startswith('webserver-vm-') or 
-            item.name.startswith('database-vm-') or 
-            item.name.startswith('loadbalancer-vm-') or 
-            item.name.startswith('monitoring-vm-')
+      when: item.name is match("(webserver|database|loadbalancer|monitoring)-vm-")
       delegate_to: localhost
 
     - name: Display destruction summary
-      debug:
+      ansible.builtin.debug:
         msg: 
           - "Deployment destruction complete."
           - "Destroyed VMs:"

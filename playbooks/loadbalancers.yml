@@ -1,6 +1,7 @@
 ---
 - name: Configure loadbalancers
   hosts: loadbalancers
+  become: true
   roles:
     - common
     - loadbalancers
