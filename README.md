@@ -87,7 +87,6 @@ Default variables are set in the common role's defaults file. You can override t
 - template_name: "Client"
 - vm_folder: "/vm/AAP_HOSTS"
 - vm_network: "DSwitch-VM Network"
-- domain_name: "itmco.local"
 - ip_netmask: "255.255.255.0"
 - ip_gateway: "192.168.2.1"
 - dns1: "192.168.2.1"
