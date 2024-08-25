@@ -1,6 +1,7 @@
 ---
 - name: Configure databases
   hosts: databases
+  become: true
   roles:
     - common
     - databases

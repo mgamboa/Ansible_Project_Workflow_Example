@@ -1,7 +1,7 @@
 ---
 - name: Set up VM Infrastructure
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
   vars:
     vm_count: 4  # Recommended minimal setup: 1 webserver, 1 database, 1 load balancer, 1 monitoring
     ip_range_start: 50
@@ -22,7 +22,7 @@
       delegate_to: localhost
 
     - name: Generate VM names and assign IPs
-      set_fact:
+      ansible.builtin.set_fact:
         vms: "{{ vms | default([]) + [{'name': item + '-vm-' + 999 | random | string, 'ip': '192.168.2.' + (ip_range_start + idx) | string, 'role': item}] }}"
       loop: "{{ vm_roles }}"
       loop_control:
@@ -34,7 +34,7 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         datacenter: "{{ datacenter_name }}"
         cluster: "{{ cluster_name }}"
         name: "{{ item.name }}"
@@ -59,7 +59,7 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         name: "{{ item.name }}"
       delegate_to: localhost
       loop: "{{ vms }}"
@@ -69,14 +69,14 @@
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
-        validate_certs: no
+        validate_certs: false
         name: "{{ item.name }}"
       delegate_to: localhost
       register: vm_info
       loop: "{{ vms }}"
 
     - name: Create dynamic inventory dictionary
-      set_fact:
+      ansible.builtin.set_fact:
         dynamic_inventory:
           all:
             children:
@@ -86,7 +86,7 @@
               monitoring: {"hosts": {}}
       
     - name: Populate dynamic inventory
-      set_fact:
+      ansible.builtin.set_fact:
         dynamic_inventory: >
           {{ dynamic_inventory | combine({
             item.item.role: {
@@ -99,15 +99,17 @@
           }, recursive=True) }}
       loop: "{{ vm_info.results }}"
       when: 
-        - item.instance.ipv4 is defined and item.instance.ipv4 != None and item.instance.ipv4 != ""
+        - item.instance.ipv4 is defined
+        - item.instance.ipv4 is not none
+        - item.instance.ipv4 | length > 0
 
     - name: Create JSON inventory file
-      copy:
+      ansible.builtin.copy:
         content: "{{ dynamic_inventory | to_json }}"
         dest: "/tmp/dynamic_inventory.json"
 
     - name: Update AWX inventory
-      uri:
+      ansible.builtin.uri:
         url: "{{ awx_url }}/api/v2/inventories/{{ awx_inventory_id }}/update_inventory_sources/"
         method: POST
         headers:
@@ -122,22 +124,22 @@
 
 - name: Configure new VMs
   hosts: all
-  gather_facts: yes
-  become: yes
+  gather_facts: true
+  become: true
 
   tasks:
     - name: Ensure hostname is set
-      hostname:
+      ansible.builtin.hostname:
         name: "{{ inventory_hostname }}"
 
     - name: Update /etc/hosts file
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/hosts
         line: "{{ ansible_host }} {{ inventory_hostname }}.{{ domain_name }} {{ inventory_hostname }}"
         state: present
 
     - name: Ensure required packages are installed
-      yum:
+      ansible.builtin.yum:
         name:
           - vim
           - wget
@@ -145,26 +147,26 @@
         state: present
 
     - name: Configure firewall
-      firewalld:
+      ansible.posix.firewalld:
         service: ssh
-        permanent: yes
+        permanent: true
         state: enabled
 
     - name: Ensure SELinux is in enforcing mode
-      selinux:
+      ansible.posix.selinux:
         policy: targeted
         state: enforcing
 
     - name: Reboot VM to apply changes
-      reboot:
+      ansible.builtin.reboot:
 
 - name: Finalize setup
   hosts: localhost
-  gather_facts: no
+  gather_facts: false
 
   tasks:
     - name: Display setup summary
-      debug:
+      ansible.builtin.debug:
         msg: 
           - "Infrastructure setup complete."
           - "Created VMs:"
