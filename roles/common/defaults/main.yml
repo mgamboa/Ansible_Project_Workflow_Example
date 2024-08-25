@@ -17,3 +17,6 @@ vm_network: "DSwitch-VM Network"
 vm_folder: "/vm/AAP_HOSTS"
 ansible_python_interpreter: "/usr/bin/python3"
 ansible_connection: "local"
+awx_url: "https://your-awx-url"  # Replace with your AWX URL
+awx_token: "your-awx-token"  # Replace with your AWX token
+awx_inventory_id: 1  # Replace with your AWX inventory ID

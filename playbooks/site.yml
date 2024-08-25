@@ -1,4 +1,12 @@
 ---
-- import_playbook: webservers.yml
-- import_playbook: databases.yml
-- import_playbook: loadbalancers.yml
+- name: Setup VM Infrastructure
+  ansible.builtin.import_playbook: setup_vm_infrastructure.yml
+
+- name: Configure Webservers
+  ansible.builtin.import_playbook: webservers.yml
+
+- name: Configure Databases
+  ansible.builtin.import_playbook: databases.yml
+
+- name: Configure Loadbalancers
+  ansible.builtin.import_playbook: loadbalancers.yml
